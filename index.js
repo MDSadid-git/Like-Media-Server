@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const app = express();
@@ -19,29 +19,28 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const resaleCollection = client.db("resalePhone").collection("resale");
-    const resaleAppleCollection = client.db("resalePhone").collection("apple");
-    const resaleSamsungCollection = client
-      .db("resalePhone")
-      .collection("samsung");
-    const resaleOppoCollection = client.db("resalePhone").collection("oppo");
+    const bookingCollection = client.db("resalePhone").collection("booking");
+
     app.get("/resalesPhone", async (req, res) => {
+      const data = req.query.name;
+      // console.log(data);
       const query = {};
       const result = await resaleCollection.find(query).toArray();
+      const bookingQuery = { productName: data.productName };
+      console.log(bookingQuery);
       res.send(result);
     });
-    app.get("/resaleApple", async (req, res) => {
-      const query = {};
-      const result = await resaleAppleCollection.find(query).toArray();
+    app.get("/resaleApple/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await resaleCollection.findOne(query);
       res.send(result);
     });
-    app.get("/resaleSamsung", async (req, res) => {
-      const query = {};
-      const result = await resaleSamsungCollection.find(query).toArray();
-      res.send(result);
-    });
-    app.get("/resaleOppo", async (req, res) => {
-      const query = {};
-      const result = await resaleOppoCollection.find(query).toArray();
+    //booking area start
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      console.log(booking);
+      const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
   } finally {
