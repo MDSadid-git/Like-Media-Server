@@ -20,14 +20,11 @@ async function run() {
   try {
     const resaleCollection = client.db("resalePhone").collection("resale");
     const bookingCollection = client.db("resalePhone").collection("booking");
+    const userCollection = client.db("resalePhone").collection("user");
 
     app.get("/resalesPhone", async (req, res) => {
-      const data = req.query.name;
-      // console.log(data);
       const query = {};
       const result = await resaleCollection.find(query).toArray();
-      const bookingQuery = { productName: data.productName };
-      console.log(bookingQuery);
       res.send(result);
     });
     app.get("/resaleApple/:id", async (req, res) => {
@@ -39,8 +36,19 @@ async function run() {
     //booking area start
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
-      console.log(booking);
+      // console.log(booking);
       const result = await bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.post("/users", async (req, res) => {
+      const users = req.body;
+      const result = await userCollection.insertOne(users);
       res.send(result);
     });
   } finally {
