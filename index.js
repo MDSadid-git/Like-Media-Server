@@ -171,6 +171,7 @@ async function run() {
     });
     app.put("/users/verify/:id", async (req, res) => {
       const id = req.params.id;
+      console.log(id);
       const filter = { _id: ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
