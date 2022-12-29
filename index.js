@@ -36,10 +36,9 @@ function verifyJWT(req, res, next) {
 
 async function run() {
   try {
-    const resaleCollection = client.db("resalePhone").collection("resale");
-    const bookingCollection = client.db("resalePhone").collection("booking");
-    const userCollection = client.db("resalePhone").collection("user");
-    const paymentsCollection = client.db("resalePhone").collection("payments");
+    const randomCollection = client.db("likeMidia").collection("random");
+    const userCollection = client.db("likeMidia").collection("user");
+    const myPostCollection = client.db("likeMidia").collection("myPost");
     const randomProductsCollection = client
       .db("resalePhone")
       .collection("randomProdcts");
@@ -55,74 +54,69 @@ async function run() {
       next();
     };
 
+    app.patch("/editPost/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+
+      const result = await randomCollection.updateOne(query, {
+        $set: req.body,
+      });
+      res.send(result);
+    });
+    app.get("/editPost/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await randomCollection.findOne(query);
+      res.send(result);
+    });
+    app.delete("/editPost/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await randomCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.get("/allPost", async (req, res) => {
+      const query = {};
+      const result = await randomCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/myallPost", async (req, res) => {
+      const query = {};
+      const result = await myPostCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/myEditPost/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await myPostCollection.findOne(query);
+      res.send(result);
+    });
     app.get("/resalesPhone", async (req, res) => {
       const query = {};
-      const result = await resaleCollection.find(query).toArray();
+      const result = await randomCollection.find(query).toArray();
       res.send(result);
     });
-    app.post("/create-payment-intent", async (req, res) => {
-      const booking = req.body;
-      const price = booking.price;
-      const amount = price * 100;
 
-      const paymentIntent = await stripe.paymentIntents.create({
-        currency: "usd",
-        amount: amount,
-        payment_method_types: ["card"],
-      });
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
-    });
-
-    app.post("/payments", async (req, res) => {
-      const payment = req.body;
-      const result = await paymentsCollection.insertOne(payment);
-      const id = payment.bookingId;
-      const filter = { _id: ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          paid: true,
-          transactionId: payment.transactionId,
-        },
-      };
-      const updatedResult = await bookingCollection.updateOne(
-        filter,
-        updatedDoc
-      );
-      res.send(result);
-    });
     app.get("/resaleApple/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const result = await resaleCollection.findOne(query);
+      const result = await randomCollection.findOne(query);
       res.send(result);
     });
-    //booking area start
-    app.get("/bookings", verifyJWT, async (req, res) => {
-      const email = req.query.email;
-      const decodedEmail = req.decoded.email;
-
-      if (email !== decodedEmail) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-
-      const query = { email: email };
-      const bookings = await bookingCollection.find(query).toArray();
-      res.send(bookings);
-    });
-    app.get("/bookings/:id", async (req, res) => {
+    app.patch("/PostUpdate/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
-      const reslut = await bookingCollection.findOne(query);
-      res.send(reslut);
-    });
-    app.post("/bookings", async (req, res) => {
-      const booking = req.body;
-      const result = await bookingCollection.insertOne(booking);
+
+      const result = await randomCollection.updateOne(query, {
+        $set: req.body,
+      });
       res.send(result);
     });
-
+    app.post("/myPost", async (req, res) => {
+      const order = req.body;
+      const result = await randomCollection.insertOne(order);
+      res.send(result);
+    });
     //users
     app.get("/users", async (req, res) => {
       const query = {};
@@ -148,54 +142,7 @@ async function run() {
       res.status(403).send({ accessToken: "" });
     });
 
-    //make Admin
-    app.get("/users/admin/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      res.send({ isAdmin: user?.role === "admin" });
-    });
-    app.put("/users/admin/:id", async (req, res) => {
-      const id = req.params.id;
-      console.log(id);
-      const filter = { _id: ObjectId(id) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
-      const result = await userCollection.updateOne(filter, updateDoc, options);
-      res.send(result);
-    });
-    app.put("/users/verify/:id", async (req, res) => {
-      const id = req.params.id;
-      console.log(id);
-      const filter = { _id: ObjectId(id) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          verify: "verify",
-        },
-      };
-      const result = await userCollection.updateOne(filter, updateDoc, options);
-      res.send(result);
-    });
-
-    // delete
-    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const result = await userCollection.deleteOne(query);
-      res.send(result);
-    });
-    app.post("/porducts", async (req, res) => {
-      const product = req.body;
-      const reslut = await randomProductsCollection.insertOne(product);
-      res.send(reslut);
-    });
-
-    //Add products
+    //Add Post
     app.get("/porducts", async (req, res) => {
       const query = {};
       const reslut = await randomProductsCollection.find(query).toArray();
@@ -206,7 +153,7 @@ async function run() {
 }
 run().catch((err) => console.log(err));
 app.get("/", (req, res) => {
-  res.send("Resale Server is running");
+  res.send("Like Media Server is running");
 });
 
 app.listen(port, () => console.log("my Server is running!!!"));
